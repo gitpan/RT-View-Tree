@@ -1,8 +1,8 @@
-#line 1 "inc/Module/Install/RTx.pm - /opt/perl-5.8.5/lib/site_perl/5.8.5/Module/Install/RTx.pm"
+#line 1 "inc/Module/Install/RTx.pm - /usr/local/share/perl/5.8.4/Module/Install/RTx.pm"
 package Module::Install::RTx;
 use Module::Install::Base; @ISA = qw(Module::Install::Base);
 
-$Module::Install::RTx::VERSION = '0.09';
+$Module::Install::RTx::VERSION = '0.10';
 
 use strict;
 use FindBin;
@@ -125,7 +125,7 @@ dropdb ::
     if (%has_etc) {
         $self->load('RTxInitDB');
         print "For first-time installation, type 'make initdb'.\n";
-        my $initdb = "initdb ::\n";
+        my $initdb = '';
         $initdb .= <<"." if $has_etc{schema};
 \t\$(NOECHO) \$(PERL) -Ilib -I"$lib_path" -Minc::Module::Install -e"RTxInitDB(qw(schema))"
 .
@@ -135,7 +135,8 @@ dropdb ::
         $initdb .= <<"." if $has_etc{initialdata};
 \t\$(NOECHO) \$(PERL) -Ilib -I"$lib_path" -Minc::Module::Install -e"RTxInitDB(qw(insert))"
 .
-        $self->postamble("$initdb\n");
+        $self->postamble("initdb ::\n$initdb\n");
+        $self->postamble("initialize-database ::\n$initdb\n");
     }
 }
 
@@ -152,6 +153,6 @@ sub RTxInit {
 
 __END__
 
-#line 220
+#line 221
 
-#line 241
+#line 242
