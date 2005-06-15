@@ -19,7 +19,7 @@
 #     NO_META => q[1]
 #     PL_FILES => {  }
 #     PREREQ_PM => {  }
-#     VERSION => q[1.2]
+#     VERSION => q[1.3]
 #     dist => { PREOP=>q[$(PERL) -I. -MModule::Install::Admin -e "dist_preop(q($(DISTVNAME)))"] }
 
 # --- MakeMaker post_initialize section:
@@ -39,14 +39,14 @@ DLSRC = dl_dlopen.xs
 LD = cc
 LDDLFLAGS = -shared -L/usr/local/lib
 LDFLAGS =  -L/usr/local/lib
-LIBC = /lib/libc-2.3.2.so
+LIBC = /lib/libc-2.3.5.so
 LIB_EXT = .a
 OBJ_EXT = .o
 OSNAME = linux
-OSVERS = 2.6.8.1
+OSVERS = 2.6.10
 RANLIB = :
-SITELIBEXP = /usr/local/share/perl/5.8.4
-SITEARCHEXP = /usr/local/lib/perl/5.8.4
+SITELIBEXP = /usr/local/share/perl/5.8.7
+SITEARCHEXP = /usr/local/lib/perl/5.8.7
 SO = so
 EXE_EXT = 
 FULL_AR = /usr/bin/ar
@@ -59,11 +59,11 @@ AR_STATIC_ARGS = cr
 DIRFILESEP = /
 NAME = RT::View::Tree
 NAME_SYM = RT_View_Tree
-VERSION = 1.2
+VERSION = 1.3
 VERSION_MACRO = VERSION
-VERSION_SYM = 1_2
+VERSION_SYM = 1_3
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 1.2
+XS_VERSION = 1.3
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -88,7 +88,7 @@ INSTALLVENDORLIB = $(VENDORPREFIX)/share/perl5
 DESTINSTALLVENDORLIB = $(DESTDIR)$(INSTALLVENDORLIB)
 INSTALLARCHLIB = $(PERLPREFIX)/lib/perl/5.8
 DESTINSTALLARCHLIB = $(DESTDIR)$(INSTALLARCHLIB)
-INSTALLSITEARCH = /usr/local/lib/perl/5.8.4
+INSTALLSITEARCH = /usr/local/lib/perl/5.8.7
 DESTINSTALLSITEARCH = $(DESTDIR)$(INSTALLSITEARCH)
 INSTALLVENDORARCH = $(VENDORPREFIX)/lib/perl5
 DESTINSTALLVENDORARCH = $(DESTDIR)$(INSTALLVENDORARCH)
@@ -244,7 +244,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = RT-View-Tree
-DISTVNAME = RT-View-Tree-1.2
+DISTVNAME = RT-View-Tree-1.3
 
 
 # --- MakeMaker macro section:
@@ -660,13 +660,13 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd:
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="1,2,0,0">' > $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="1,3,0,0">' > $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <TITLE>$(DISTNAME)</TITLE>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <ABSTRACT>RT View-Tree Extension</ABSTRACT>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <AUTHOR>Jesse Vincent &lt;jesse@bestpractical.com&gt;</AUTHOR>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <OS NAME="$(OSNAME)" />' >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="i386-linux-thread-multi" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="i386-linux-gnu-thread-multi" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '</SOFTPKG>' >> $(DISTNAME).ppd

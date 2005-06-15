@@ -192,7 +192,7 @@ unshift @{$Format[0]->{'output'}}, "[<a
 </%perl>
 </table>
 <hr>
-<form method="get" action="/Search/Tree.html">
+<form method="get" action="<%$RT::WebPath%>/Search/Tree.html">
 <input type="hidden" name="Query" value="<%$Query%>">
 <input type="hidden" name="Format" value="<%$Format%>">
 <& /Elements/TitleBoxStart, title => loc('Display options') &>
