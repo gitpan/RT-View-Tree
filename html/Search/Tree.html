@@ -10,15 +10,20 @@ $Page => undef
 $MaxDepth => 7
 $ShowChildren => undef
 $ShowDependencies => undef
+@ShowStatus => ();
 </%ARGS>
 <%init>
 
+my @statuses = RT::Queue->new($session{'CurrentUser'})->StatusArray;
 unless ($TreeviewMagic) {
     unless (defined $ShowChildren) {
         $ShowChildren = 1;
     }
     unless (defined $ShowDependencies) {
-    $ShowDependencies = 1;
+	$ShowDependencies = 1;
+    }
+    unless( @ShowStatus ) {
+	@ShowStatus = qw(new open stalled);
     }
 }
 
@@ -27,8 +32,8 @@ unless ($TreeviewMagic) {
 
 my $title = loc('Tree view');
 
-my $QueryString = "?"
-  . $m->comp(
+my $QueryString = "?".
+    $m->comp(
     '/Elements/QueryString',
     Query            => $Query,
     Format           => $Format,
@@ -38,8 +43,12 @@ my $QueryString = "?"
     Page             => $Page,
     MaxDepth         => $MaxDepth,
     ShowChildren     => $ShowChildren,
-    ShowDependencies => $ShowDependencies
+    ShowDependencies => $ShowDependencies,
   );
+# QueryString couldn't handle array refs
+$QueryString = join( '&', $QueryString,
+			  map { 'ShowStatus='. $m->interp->apply_escapes($_,'u') }
+			  	@ShowStatus);
 
 # }}}
 
@@ -53,9 +62,9 @@ if ($id) {
 }
 # }}}
 
-# {{{ Scrub the html of the format string to remove any potential nasties.a
+# {{{ Scrub the html of the format string to remove any potential nasties.
 $Format = $m->comp( '/Elements/ScrubHTML', Content => ($Format||
-$RT::DefaultSearchResultFormat));
+			           $RT::DefaultSearchResultFormat));
 my (@Format) =
   $m->comp( '/Elements/CollectionAsTable/ParseFormat', Format => $Format );
 
@@ -64,12 +73,18 @@ foreach my $entry (@Format) {
     my @output;
     foreach my $item ( @{ $entry->{'output'} } ) {
         if ( $item eq '__Subject__' ) {
-        push @output, 
-        '___RT_TreeView_Indent__', $item;
+	    # add indent whitespaces before link
+	    unshift @output, '___RT_TreeView_Indent__';
+	    push @output, $item;
         }
         else {
             push @output, $item;
         }
+    }
+    if( lc $entry->{'attribute'} eq 'id' ) {
+	for my $item ( @output ) {
+	    $item =~ s/<A\s/<A target="_blank" /iso if $item =~ /<A\s/iso;
+	}
     }
     $entry->{'output'} = \@output;
 }
@@ -79,16 +94,11 @@ my $tickets = RT::Tickets->new( $session{'CurrentUser'} );
 $tickets->FromSQL($Query);
 $tickets->OrderBy( FIELD => $OrderBy, ORDER => $Order );
 
-my $TopTickets = ();
 my @tickets = @{ $tickets->ItemsArrayRef || [] };
-
-
-foreach my $ticket (@tickets) {
-    $TopTickets->{ $ticket->id } = $ticket;
-}
+my $TopTickets = {};
+$TopTickets->{ $_->id } = $_ foreach( @tickets );
 
 my @tree;
-
 foreach my $ticket (@tickets) {
 
     # If the parent ticket hasn't been invalidated by being displayed deeper...
@@ -100,11 +110,14 @@ foreach my $ticket (@tickets) {
         Depth            => 1,
         MaxDepth         => $MaxDepth,
         ShowChildren     => $ShowChildren,
-        ShowDependencies => $ShowDependencies
+        ShowDependencies => $ShowDependencies,
+	ShowStatus       => \@ShowStatus,
     );
+    unless( $kids && @$kids ) {
+	next unless grep $_ eq $ticket->Status, @ShowStatus;
+    }
 
     push @tree, [ $ticket, $kids ];
-
 }
 
 # Ok. Let's build up our tree of tickets, recursing down.
@@ -114,43 +127,38 @@ sub build_subtree {
         TopTickets       => undef,
         ShowChildren     => undef,
         ShowDependencies => undef,
+	ShowStatus       => undef,
         Depth            => undef,
         MaxDepth         => undef,
         @_
     );
 
-   return if ( $args{'Depth'} > $args{'MaxDepth'} );
+    return if ( $args{'Depth'} > $args{'MaxDepth'} );
 
-    my $ticket      = $args{'Ticket'};
-    my $TopTickets = $args{'TopTickets'};
+    my @query;
+    push @query, 'DependsOn = ' . $args{'Ticket'}->id
+		  if ( $args{'ShowDependencies'} );
+    push @query, 'MemberOf = ' . $args{'Ticket'}->id
+		  if ( $args{'ShowChildren'} );
 
     my $deps = RT::Tickets->new( $session{'CurrentUser'} );
-    my @query;
-
-    my @tickets;
-
-    push @query, 'DependentOn = ' . $ticket->id
-      if ( $args{'ShowDependencies'} );
-    push @query, 'MemberOf = ' . $ticket->id if ( $args{'ShowChildren'} );
-
     $deps->FromSQL( join( ' OR ', @query ) );
     $deps->OrderBy( FIELD => $args{'OrderBy'}, ORDER => $args{'Order'} );
 
+    my @tickets;
     while ( my $dep = $deps->Next ) {
-        delete $TopTickets->{ $dep->id };
+        delete $args{'TopTickets'}->{ $dep->id };
         my $kids = undef;
         $kids = build_subtree(
-            Ticket           => $dep,
-            TopTickets       => $TopTickets,
-            Depth            => ( $args{'Depth'} + 1 ),
-            MaxDepth         => $args{'MaxDepth'},
-            ShowChildren     => $args{'ShowChildren'},
-            ShowDependencies => $args{'ShowDependencies'}
+	    %args,
+            Ticket     => $dep,
+            Depth      => $args{'Depth'} + 1,
           );
+	unless( $kids && @$kids ) {
+	    next unless grep $_ eq $dep->Status, @{ $args{'ShowStatus'} };
+        }
         push @tickets, [ $dep, $kids ];
-
     }
-
 
     return ( \@tickets );
 }
@@ -208,6 +216,11 @@ value=<%$MaxDepth%>>
 'CHECKED'%>><&|/l&>Show children in sublevels</&></li>
 <li><input type="checkbox" name="ShowDependencies" <%$ShowDependencies&& 
 'CHECKED'%>><&|/l&>Show dependencies in sublevels</&></li>
+<li><&|/l&>Status</&>:<SELECT name="ShowStatus" multiple size=6>
+% foreach my $s(@statuses) {
+<option value="<% $s %>" <% (grep $_ eq $s, @ShowStatus)? 'selected': ''%>><&|/l&><% $s %></&></option>
+% }
+</select></li>
 </ul>
 <& /Elements/Submit &>
 <& /Elements/TitleBoxEnd &>
